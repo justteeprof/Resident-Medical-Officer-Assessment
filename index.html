@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duchess International Hospital | Comprehensive Resident Medical Officer Competency Examination</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#eef2f7;margin:0}
+.header{background:#002147;color:#fff;padding:20px;text-align:center}
+.logo{height:60px}
+.container{max-width:1100px;margin:20px auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08)}
+h1,h2{color:#002147}
+.section{margin-top:30px;padding-top:20px;border-top:1px solid #ddd}
+.question{margin-bottom:15px}
+button{background:#002147;color:#fff;padding:10px 18px;border:none;border-radius:6px;cursor:pointer}
+button:hover{background:#004080}
+input[type=text],input[type=password]{padding:8px;width:100%;margin-bottom:15px}
+.timer{font-weight:bold;color:#b30000;font-size:18px;text-align:right}
+.hidden{display:none}
+.certificate-preview{border:3px double #002147;padding:40px;text-align:center}
+.footer{text-align:center;font-size:12px;margin-top:40px;color:#777}
+</style>
+</head>
+<body oncopy="return false" oncut="return false" onpaste="return false">
+
+<div class="header">
+<img src="logo.jpeg" class="logo" alt="Duchess Logo">
+<h1>Duchess International Hospital</h1>
+<p>Comprehensive Resident Medical Officer Assessment</p>
+</div>
+
+<div class="container" id="loginSection">
+<h2>Secure Login</h2>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">Login to Begin Exam</button>
+<p id="loginError" style="color:red"></p>
+</div>
+
+<div class="container hidden" id="examSection">
+<div class="timer">Time Remaining: <span id="time">90:00</span></div>
+<p><strong>Candidate Name:</strong></p>
+<input type="text" id="candidateName" placeholder="Enter Full Name">
+<div id="quizForm"></div>
+<button onclick="submitExam()">Submit Examination</button>
+<div id="result" style="margin-top:20px;font-weight:bold"></div>
+<button id="downloadBtn" class="hidden" onclick="generatePDF()">Download Institutional Certificate</button>
+<button id="reportBtn" class="hidden" onclick="generateReportPDF()">Download Full Exam Report</button>
+</div>
+
+<script>
+    // Global variable
+    let certificateID = "";
+
+// =============================
+// SINGLE ATTEMPT CONTROL
+// =============================
+
+function hasCompletedExam(username){
+    return localStorage.getItem("exam_completed_" + username) === "true";
+}
+
+function markExamCompleted(username){
+    localStorage.setItem("exam_completed_" + username, "true");
+}
+
+const validUser = "candidate001";
+const validPass = "duchess2026";
+
+function login(){
+let u=document.getElementById("username").value;
+let p=document.getElementById("password").value;
+
+if(u===validUser && p===validPass){
+
+    if(hasCompletedExam(u)){
+        document.getElementById("loginError").innerText =
+        "This candidate has already completed the competency examination. Multiple attempts are not permitted.";
+        return;
+    }
+
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("examSection").classList.remove("hidden");
+    startTimer(45*60);
+    generateQuestions();
+
+}else{
+document.getElementById("loginError").innerText="Invalid login credentials.";
+}
+}
+
+function startTimer(duration){
+let timer=duration;
+let display=document.getElementById('time');
+let interval=setInterval(function(){
+let minutes=parseInt(timer/60,10);
+let seconds=parseInt(timer%60,10);
+minutes=minutes<10?"0"+minutes:minutes;
+seconds=seconds<10?"0"+seconds:seconds;
+display.textContent=minutes+":"+seconds;
+if(--timer<0){clearInterval(interval);submitExam();}
+},1000);
+}
+
+const questions = [
+
+{q:"A 25-year-old male presents with severe epigastric pain radiating to the back, associated with vomiting. Serum amylase is markedly elevated. What is the most likely diagnosis?",
+options:["Perforated peptic ulcer","Acute pancreatitis","Acute cholecystitis","Gastritis"],
+answer:1,
+explanation:"Acute pancreatitis typically presents with severe epigastric pain radiating to the back, vomiting, and elevated serum amylase or lipase. Perforated peptic ulcer presents with sudden severe pain and signs of peritonitis. Cholecystitis causes RUQ pain, while gastritis causes milder epigastric discomfort without significant enzyme elevation."},
+
+{q:"A 60-year-old man presents with painless progressive jaundice and weight loss. What is the most likely diagnosis?",
+options:["Gallstones","Pancreatic head tumor","Acute hepatitis","Cholecystitis"],
+answer:1,
+explanation:"Painless progressive jaundice with weight loss is highly suggestive of carcinoma of the head of the pancreas. Gallstones usually cause pain, while hepatitis presents with systemic symptoms and cholecystitis causes RUQ pain and fever."},
+
+{q:"Which of the following is the most appropriate initial management of a patient with suspected perforated peptic ulcer?",
+options:["Immediate oral antibiotics","Urgent laparotomy after resuscitation","Observation only","Start feeding immediately"],
+answer:1,
+explanation:"Perforated peptic ulcer is a surgical emergency. Initial management involves resuscitation with IV fluids, antibiotics, nasogastric decompression, followed by urgent surgical intervention (laparotomy or laparoscopy)."},
+
+{q:"A patient refuses a life-saving surgery due to personal beliefs. What is the most appropriate action?",
+options:["Proceed with surgery without consent","Respect the patient's decision after proper counseling","Force family to consent","Discharge the patient immediately"],
+answer:1,
+explanation:"Respect for patient autonomy is fundamental. After adequate counseling and ensuring the patient has decision-making capacity, their refusal must be respected even if the decision may lead to harm."},
+
+{q:"A junior colleague makes a medication error that could harm a patient. What should you do?",
+options:["Ignore it","Report immediately and ensure patient safety","Blame the colleague publicly","Hide the error"],
+answer:1,
+explanation:"Patient safety is paramount. The correct approach is to act immediately to mitigate harm and report the error through proper channels while maintaining professionalism and supporting system improvement."},
+
+{q:"Which structure passes through the inguinal canal in males?",
+options:["Femoral artery","Ureter","Spermatic cord","Inferior vena cava"],
+answer:2,
+explanation:"The spermatic cord passes through the inguinal canal in males. It contains structures such as the vas deferens, testicular vessels, and nerves."},
+
+{q:"A 40-year-old patient presents with a reducible groin swelling that increases on coughing. What is the most likely diagnosis?",
+options:["Femoral hernia","Inguinal hernia","Hydrocele","Varicocele"],
+answer:1,
+explanation:"A reducible swelling in the groin with a cough impulse is characteristic of an inguinal hernia. Femoral hernias are typically below the inguinal ligament and more common in females."},
+
+{q:"During surgery, you notice unexpected bleeding. What is your first response?",
+options:["Panic and call for help","Apply direct pressure and control bleeding","Ignore and continue","Close the wound quickly"],
+answer:1,
+explanation:"The first step in managing intraoperative bleeding is to remain calm and apply direct pressure to control hemorrhage, followed by identifying and addressing the source."},
+
+{q:"Which electrolyte imbalance is most commonly associated with prolonged vomiting?",
+options:["Hyperkalemia","Hypokalemia","Hypercalcemia","Hyponatremia"],
+answer:1,
+explanation:"Prolonged vomiting leads to loss of gastric contents, resulting in hypokalemia and metabolic alkalosis due to loss of hydrogen and potassium ions."},
+
+{q:"A patient under your care deteriorates suddenly at night. You are unsure of the diagnosis. What should you do?",
+options:["Wait till morning rounds","Start random treatment","Call for senior help immediately","Ignore and document"],
+answer:2,
+explanation:"Recognizing limitations and seeking help early is a critical trait in safe medical practice. Prompt escalation ensures patient safety and reflects good clinical judgment."},
+
+{q:"A 45-year-old man presents with severe abdominal pain, distension, and absolute constipation. X-ray shows multiple air-fluid levels and dilated bowel loops. What is the most likely diagnosis?",
+options:["Paralytic ileus","Small bowel obstruction","Large bowel obstruction","Perforated viscus"],
+answer:1,
+explanation:"Small bowel obstruction typically presents with abdominal pain, distension, vomiting, and absolute constipation. X-ray findings of multiple air-fluid levels and centrally located dilated loops support this diagnosis. Paralytic ileus lacks mechanical obstruction, while perforation shows free air under the diaphragm."},
+
+{q:"A trauma patient presents with hypotension, tachycardia, and a distended abdomen after a road traffic accident. What is the next best step?",
+options:["CT scan of abdomen","Immediate laparotomy","FAST ultrasound","Observation"],
+answer:2,
+explanation:"In a hemodynamically unstable trauma patient, a FAST (Focused Assessment with Sonography in Trauma) scan is the quickest way to detect intra-abdominal bleeding. If positive, it guides urgent laparotomy. CT is reserved for stable patients."},
+
+{q:"During central line insertion, the patient suddenly develops shortness of breath and decreased breath sounds on one side. What is the most likely complication?",
+options:["Pulmonary embolism","Pneumothorax","Cardiac tamponade","Air embolism"],
+answer:1,
+explanation:"Pneumothorax is a known complication of central line insertion, especially via the subclavian route. Sudden respiratory distress with unilateral decreased breath sounds is characteristic."},
+
+{q:"A diabetic patient presents with a rapidly spreading soft tissue infection, severe pain out of proportion to findings, and crepitus. What is the diagnosis?",
+options:["Cellulitis","Abscess","Necrotizing fasciitis","Erysipelas"],
+answer:2,
+explanation:"Necrotizing fasciitis is a surgical emergency characterized by rapidly spreading infection, severe pain out of proportion, systemic toxicity, and sometimes crepitus. Urgent surgical debridement is required."},
+
+{q:"Which of the following best reflects good surgical leadership during a crisis in theatre?",
+options:["Shouting orders to assert authority","Maintaining calm, clear communication and delegation","Ignoring team input","Working alone to avoid mistakes"],
+answer:1,
+explanation:"Effective surgical leadership involves calmness, clear communication, situational awareness, and proper delegation. This ensures patient safety and optimal team performance."},
+
+{q:"A 70-year-old patient with a history of atrial fibrillation presents with sudden severe abdominal pain and minimal findings on examination. What is the most likely diagnosis?",
+options:["Appendicitis","Mesenteric ischemia","Cholecystitis","Diverticulitis"],
+answer:1,
+explanation:"Mesenteric ischemia classically presents with severe abdominal pain out of proportion to physical findings, especially in patients with risk factors like atrial fibrillation due to embolic events."},
+
+{q:"A patient develops fever, tachycardia, and purulent discharge from a surgical wound on postoperative day 5. What is the most likely diagnosis?",
+options:["Seroma","Hematoma","Surgical site infection","Wound dehiscence"],
+answer:2,
+explanation:"Fever, tachycardia, and purulent discharge are hallmark features of a surgical site infection, typically occurring around postoperative day 5–7."},
+
+{q:"You are asked to assist in a procedure you are not familiar with. What is the most appropriate action?",
+options:["Decline and leave","Proceed without informing anyone","Inform the team of your limitations and be willing to learn","Pretend to know the procedure"],
+answer:2,
+explanation:"Honesty about one’s limitations while showing willingness to learn reflects professionalism, patient safety awareness, and good teamwork."},
+
+{q:"A patient with head injury develops bradycardia, hypertension, and irregular respiration. What does this indicate?",
+options:["Hypovolemic shock","Cushing's triad indicating raised intracranial pressure","Septic shock","Neurogenic shock"],
+answer:1,
+explanation:"Cushing’s triad (bradycardia, hypertension, irregular respiration) is a late sign of increased intracranial pressure and impending brain herniation."},
+
+{q:"During ward rounds, you notice a patient has not received prescribed antibiotics for 24 hours. What should you do first?",
+options:["Ignore it","Blame the nurse","Ensure the patient receives the medication immediately and investigate","Write a report later"],
+answer:2,
+explanation:"Immediate patient care takes priority. Ensure the antibiotic is given promptly, then investigate the cause to prevent recurrence. This demonstrates initiative and accountability."},
+
+{q:"During thyroidectomy, injury to which nerve results in inability to tense the vocal cords, leading to a monotonous voice?",
+options:["Recurrent laryngeal nerve","External branch of superior laryngeal nerve","Internal branch of superior laryngeal nerve","Vagus nerve"],
+answer:1,
+explanation:"The external branch of the superior laryngeal nerve supplies the cricothyroid muscle, which is responsible for tensing the vocal cords and modulating pitch. Injury leads to inability to produce high-pitched sounds and a monotonous voice."},
+
+{q:"A patient develops hoarseness after thyroid surgery. Which structure is most likely injured?",
+options:["Hypoglossal nerve","Recurrent laryngeal nerve","Glossopharyngeal nerve","Phrenic nerve"],
+answer:1,
+explanation:"The recurrent laryngeal nerve supplies most intrinsic muscles of the larynx. Injury leads to vocal cord paralysis and hoarseness, a common complication of thyroid surgery."},
+
+{q:"During splenectomy, which ligament must be divided to control the splenic vessels?",
+options:["Gastrosplenic ligament","Splenorenal ligament","Falciform ligament","Hepatoduodenal ligament"],
+answer:1,
+explanation:"The splenic vessels run within the splenorenal (lienorenal) ligament. Division of this ligament allows control of the splenic artery and vein during splenectomy."},
+
+{q:"A patient develops severe hypotension and tachycardia following acute blood loss. Which physiological mechanism initially maintains blood pressure?",
+options:["Decreased heart rate","Peripheral vasodilation","Sympathetic vasoconstriction","Increased urine output"],
+answer:2,
+explanation:"Acute blood loss triggers sympathetic activation, causing vasoconstriction, increased heart rate, and increased cardiac contractility to maintain perfusion to vital organs."},
+
+{q:"Which part of the small intestine is most susceptible to ischemia due to its relatively poor collateral blood supply?",
+options:["Duodenum","Jejunum","Ileum","Terminal ileum"],
+answer:1,
+explanation:"The jejunum has fewer arterial arcades and less collateral circulation compared to the ileum, making it relatively more vulnerable to ischemic injury."},
+
+{q:"During cholecystectomy, the cystic artery is typically a branch of which artery?",
+options:["Common hepatic artery","Right hepatic artery","Left hepatic artery","Gastroduodenal artery"],
+answer:1,
+explanation:"The cystic artery most commonly arises from the right hepatic artery within Calot’s triangle. Proper identification is crucial to avoid bleeding and bile duct injury."},
+
+{q:"A patient develops tetany after thyroid surgery. Which structure was most likely compromised?",
+options:["Recurrent laryngeal nerve","Parathyroid glands","Thyroid cartilage","Carotid artery"],
+answer:1,
+explanation:"Accidental removal or devascularization of the parathyroid glands during thyroidectomy leads to hypocalcemia, which manifests as tetany."},
+
+{q:"Which Starling force primarily drives fluid out of capillaries into the interstitial space?",
+options:["Plasma oncotic pressure","Interstitial hydrostatic pressure","Capillary hydrostatic pressure","Lymphatic pressure"],
+answer:2,
+explanation:"Capillary hydrostatic pressure pushes fluid out of the capillaries into the interstitial space, while plasma oncotic pressure pulls fluid back into the capillaries."},
+
+{q:"In portal hypertension, which of the following sites is NOT a common portosystemic anastomosis?",
+options:["Lower esophagus","Umbilicus","Rectum","Gallbladder"],
+answer:3,
+explanation:"Common portosystemic anastomoses occur at the lower esophagus, umbilicus (caput medusae), and rectum (hemorrhoids). The gallbladder is not a site of such anastomoses."},
+
+{q:"A patient undergoing major surgery develops metabolic acidosis due to poor tissue perfusion. What is the primary cause?",
+options:["Respiratory alkalosis","Lactic acid accumulation","Loss of bicarbonate via kidneys","Hyperventilation"],
+answer:1,
+explanation:"Poor tissue perfusion leads to anaerobic metabolism and accumulation of lactic acid, resulting in metabolic acidosis, a key feature of shock states."},
+
+{q:"A patient with suspected appendicitis has normal vital signs and mild symptoms. What is the best next step?",
+options:["Immediate surgery","Discharge without follow-up","Further evaluation and observation","Start antibiotics and ignore"],
+answer:2,
+explanation:"Not all suspected appendicitis requires immediate surgery. Safe practice involves proper evaluation, serial examinations, and possibly imaging. Overconfidence may push premature surgery."},
+
+{q:"During surgery, you are unsure of an anatomical structure before cutting. What should you do?",
+options:["Proceed quickly to save time","Cut and confirm later","Pause and clarify anatomy before proceeding","Ask the nurse to decide"],
+answer:2,
+explanation:"A key principle in surgery is: never cut what you cannot clearly identify. Overconfident surgeons may proceed blindly, risking major injury."},
+
+{q:"A patient’s blood pressure suddenly drops intraoperatively. You are not sure of the cause. What is your first step?",
+options:["Ignore and continue surgery","Give random drugs","Call for help and assess systematically","Close the patient immediately"],
+answer:2,
+explanation:"Systematic assessment and early escalation are crucial. Overconfidence may lead to random, unsafe actions."},
+
+{q:"You have successfully performed a procedure several times. A senior suggests a different approach. What should you do?",
+options:["Ignore the senior","Argue aggressively","Listen and consider the suggestion","Proceed your way without discussion"],
+answer:2,
+explanation:"Openness to learning reflects maturity. Overconfidence often leads to dismissing valuable input."},
+
+{q:"A patient insists on discharge against medical advice despite clear risks. What is the best approach?",
+options:["Force the patient to stay","Let them go without explanation","Explain risks clearly and document properly","Refuse to attend to the patient"],
+answer:2,
+explanation:"Respect autonomy but ensure proper counseling and documentation. Overconfidence may lead to coercion or negligence."},
+
+{q:"You are extremely tired after a long shift but asked to perform a procedure. What should you do?",
+options:["Proceed regardless","Refuse completely","Assess your capacity and seek support if needed","Rush through it quickly"],
+answer:2,
+explanation:"Recognizing fatigue and its impact on performance is critical. Overconfidence ignores personal limitations, risking patient safety."},
+
+{q:"A junior asks you a question you are unsure about. What is the best response?",
+options:["Give an answer confidently even if unsure","Dismiss the question","Admit uncertainty and suggest checking","Ignore the junior"],
+answer:2,
+explanation:"Honesty and willingness to verify information reflect professionalism. Overconfidence leads to misinformation."},
+
+{q:"A patient improves after your treatment. What should you attribute it to?",
+options:["Your skill alone","Luck","Team effort and appropriate management","Ignore the outcome"],
+answer:2,
+explanation:"Good outcomes are usually due to combined efforts and correct processes. Overconfidence leads to self-attribution bias."},
+
+{q:"You are performing a procedure and encounter unexpected findings. What should you do?",
+options:["Proceed as planned regardless","Abort immediately without thought","Reassess and modify the plan appropriately","Ignore findings"],
+answer:2,
+explanation:"Adaptability is key in surgery. Overconfidence leads to rigid thinking and poor outcomes."},
+
+{q:"A colleague questions your management plan. What is the best response?",
+options:["Take offense immediately","Ignore them","Discuss and justify your plan with evidence","Report them"],
+answer:2,
+explanation:"Constructive discussion improves patient care. Overconfidence often results in defensiveness and poor teamwork."},
+
+{q:"A patient develops tachycardia, hypotension, and increasing abdominal pain within 6 hours after laparotomy. What is the most likely complication?",
+options:["Wound infection","Anastomotic leak","Incisional hernia","Adhesive intestinal obstruction"],
+answer:1,
+explanation:"Early postoperative deterioration with sepsis signs strongly suggests an anastomotic leak, which is a surgical emergency. Wound infection and incisional hernia occur later, while adhesive obstruction is typically delayed."},
+
+{q:"A patient presents on postoperative day 2 with fever, cough, and reduced breath sounds at the lung bases. What is the most likely diagnosis?",
+options:["Pulmonary embolism","Atelectasis","Pneumothorax","Pneumonia"],
+answer:1,
+explanation:"Atelectasis is the most common early postoperative pulmonary complication, typically occurring within 24–48 hours due to shallow breathing and poor lung expansion."},
+
+{q:"A patient develops fever and purulent discharge from the wound on postoperative day 6. What type of complication is this?",
+options:["Early complication","Intraoperative complication","Late complication","Anaesthetic complication"],
+answer:2,
+explanation:"Surgical site infection typically presents after 5–7 days, making it a late postoperative complication."},
+
+{q:"Sudden severe abdominal pain and tachycardia occur in a patient 24 hours after bowel surgery. The abdomen is rigid on examination. What is the most likely diagnosis?",
+options:["Anastomotic leak","Simple ileus","Wound infection","Constipation"],
+answer:0,
+explanation:"Anastomotic leak presents early with peritonitis, rigid abdomen, tachycardia, and systemic toxicity. This is a life-threatening emergency."},
+
+{q:"A patient develops deep vein thrombosis on postoperative day 7. What type of complication is this?",
+options:["Early complication","Late complication","Intraoperative complication","Technical failure"],
+answer:1,
+explanation:"DVT typically occurs in the subacute postoperative period (days to weeks), making it a late complication related to immobility and hypercoagulability."},
+
+{q:"Within hours after thyroid surgery, a patient develops neck swelling, respiratory distress, and stridor. What is the most likely cause?",
+options:["Wound infection","Thyroid storm","Postoperative hematoma","Recurrent laryngeal nerve injury"],
+answer:2,
+explanation:"Postoperative hematoma is an early life-threatening complication after thyroid surgery due to airway compression."},
+
+{q:"A patient develops jaundice and fever 10 days after laparoscopic cholecystectomy. What is the most likely complication?",
+options:["Bile duct injury or stricture","Acute pancreatitis","Gastritis","Ileus"],
+answer:0,
+explanation:"Delayed jaundice and fever after cholecystectomy suggest bile duct injury, leak, or developing stricture—a serious late complication."},
+
+{q:"A patient has persistent vomiting and abdominal distension on postoperative day 1 with minimal bowel sounds. What is the likely diagnosis?",
+options:["Adhesive obstruction","Paralytic ileus","Strangulated hernia","Anastomotic leak"],
+answer:1,
+explanation:"Paralytic ileus is a normal early postoperative physiological response characterized by delayed bowel motility within 24–72 hours."},
+
+{q:"A patient develops fever, tachycardia, and confusion on postoperative day 3. Wound appears clean. What is the most likely diagnosis?",
+options:["Sepsis from occult source","Normal postoperative response","Drug reaction only","Mild dehydration"],
+answer:0,
+explanation:"Systemic signs without obvious wound infection suggest occult sepsis such as intra-abdominal infection, urinary tract infection, or pneumonia."},
+
+{q:"A patient presents months after abdominal surgery with a bulge at the incision site that increases on coughing. What is the likely diagnosis?",
+options:["Incisional hernia","Wound infection","Seroma","Abscess"],
+answer:0,
+explanation:"Incisional hernia is a late complication of poor wound healing or fascial dehiscence, typically presenting months after surgery with cough impulse."},
+
+{q:"During laparoscopic cholecystectomy, the anatomy in Calot’s triangle is unclear due to inflammation. What is the safest next step?",
+options:["Proceed with clipping anyway","Convert to open surgery or perform fundus-first approach if experienced","Ignore the anatomy and continue laparoscopically","Stop surgery and close immediately"],
+answer:1,
+explanation:"When critical view of safety cannot be achieved in Calot’s triangle, the safest decision is to convert to open surgery or adopt an alternative safe technique. Continuing blindly risks bile duct injury."},
+
+{q:"During appendectomy, you encounter a normal-looking appendix but a suspicious inflamed terminal ileum. What should you do?",
+options:["Remove appendix only and ignore ileum","Resect terminal ileum immediately","Inspect further and consider differential diagnoses (e.g., Crohn’s, Meckel’s diverticulitis)","Close abdomen without action"],
+answer:2,
+explanation:"A normal appendix with inflamed ileum suggests alternative pathology such as Crohn’s disease or Meckel’s diverticulitis. Further assessment is required before committing to unnecessary resection."},
+
+{q:"During surgery, there is sudden uncontrolled bleeding from a deep field and visualization is poor. What is the best immediate action?",
+options:["Continue blindly suctioning","Apply pressure, pack, and call for senior help","Clamp randomly","Increase electrocautery blindly"],
+answer:1,
+explanation:"The correct response to uncontrolled bleeding is damage control: direct pressure, packing, temporary hemostasis, and escalation. Blind maneuvers increase risk of injury."},
+
+{q:"While dissecting near the common bile duct, you are uncertain of the anatomy. What should you do?",
+options:["Continue carefully with caution","Proceed quickly to finish","Stop dissection and reassess anatomy before proceeding","Ligate suspected structure immediately"],
+answer:2,
+explanation:"Never proceed when anatomy is uncertain in critical areas. Stopping to reassess prevents catastrophic bile duct injury."},
+
+{q:"During bowel surgery, you notice questionable perfusion at an anastomotic edge. What is the best action?",
+options:["Ignore and proceed with closure","Resect back to healthy bleeding margins and redo anastomosis","Apply antibiotics and continue","Observe postoperatively only"],
+answer:1,
+explanation:"Poor perfusion at anastomotic edges significantly increases leak risk. The correct action is to resect to healthy tissue and reconstruct."},
+
+{q:"During laparotomy, you discover unexpected metastatic disease. The procedure was elective. What should you do?",
+options:["Proceed with full resection regardless","Abort surgery or convert to palliative approach after assessment","Close immediately without inspection","Continue original plan unchanged"],
+answer:1,
+explanation:"Unexpected advanced malignancy may change surgical intent. The surgeon must reassess goals—curative vs palliative—before proceeding."},
+
+{q:"You are performing a hernia repair and accidentally injure a small bowel loop. What is the best management?",
+options:["Ignore if small injury","Suture repair or resection depending on injury extent, then reassess field","Close abdomen quickly","Convert patient immediately without repair"],
+answer:1,
+explanation:"Intraoperative bowel injury must be properly assessed and repaired or resected depending on severity. Ignoring it leads to sepsis and morbidity."},
+
+{q:"During surgery, the anesthetist reports sudden drop in oxygen saturation. Surgical field is stable. What should you do?",
+options:["Ignore and continue surgery","Pause surgery and assist in airway evaluation","Increase surgical speed","Give fluids only"],
+answer:1,
+explanation:"Intraoperative hypoxia is a shared emergency. Surgery must pause while airway, ventilation, and circulation are assessed collaboratively."},
+
+{q:"During dissection, you inadvertently enter a plane with heavy bleeding but anatomy is still unclear. What is the safest principle?",
+options:["Persistence until anatomy is found","Convert or reposition and regain orientation before continuing","Clamp everything in sight","Proceed faster to finish"],
+answer:1,
+explanation:"Loss of anatomical orientation is a key trigger for conversion or pause. Continuing blindly is a major cause of surgical catastrophe."},
+
+{q:"While closing abdomen, you suspect a missing swab but counts are incomplete. What should you do?",
+options:["Close and hope for best","Ignore count discrepancy","Stop closure and perform systematic search until count is correct","Finish quickly and document later"],
+answer:2,
+explanation:"Retained foreign body is a preventable catastrophe. Closure must not proceed until counts are reconciled and swab is accounted for."},
+
+{q:"A post-operative patient has urine output of 15 mL/hour, tachycardia, dry mucous membranes, and low blood pressure. What is the most likely cause?",
+options:["Fluid overload","Hypovolemia","Acute renal failure as primary cause","Heart failure"],
+answer:1,
+explanation:"Low urine output with tachycardia, hypotension, and signs of dehydration strongly suggests hypovolemia. Early renal hypoperfusion is secondary, not primary."},
+
+{q:"A patient has urine output of 20 mL/hour post-operatively but is clinically stable and well perfused. What is the best interpretation?",
+options:["Immediate acute kidney injury","Likely normal variation or mild dehydration","Severe renal failure","Obstructive uropathy"],
+answer:1,
+explanation:"Mildly reduced urine output in a stable, well-perfused patient is often due to physiological post-op ADH secretion or mild dehydration, not necessarily AKI."},
+
+{q:"A post-op patient is confused, has low sodium, and is euvolemic on examination. What is the most likely cause?",
+options:["Dehydration","SIADH","Diabetes insipidus","Heart failure"],
+answer:1,
+explanation:"Euvolemic hyponatremia with confusion is typical of SIADH, commonly seen after surgery due to stress-induced ADH secretion."},
+
+{q:"A surgical patient develops hypotension, warm extremities, and bounding pulse. What type of shock is most likely?",
+options:["Hypovolemic shock","Cardiogenic shock","Septic shock (early/vasodilatory phase)","Neurogenic shock"],
+answer:2,
+explanation:"Warm peripheries with hypotension and bounding pulse suggest early septic (distributive) shock due to vasodilation."},
+
+{q:"A post-operative patient has high urine output (>3 L/day), hypernatremia, and thirst. What is the most likely diagnosis?",
+options:["SIADH","Diabetes insipidus","Acute renal failure","Fluid overload"],
+answer:1,
+explanation:"High-volume dilute urine with hypernatremia and thirst suggests diabetes insipidus due to ADH deficiency or resistance."},
+
+{q:"A patient has rising creatinine on day 2 post-op, urine output is 30 mL/hour, and blood pressure is low. What is the most likely cause?",
+options:["Intrinsic renal failure primary","Pre-renal acute kidney injury","Post-renal obstruction","Chronic kidney disease progression"],
+answer:1,
+explanation:"Most early post-op AKI is pre-renal due to hypoperfusion from hypovolemia or shock. Intrinsic renal failure usually develops later or after prolonged insult."},
+
+{q:"A patient becomes tachycardic and hypotensive post-operatively with normal hemoglobin but falling urine output. What is the most likely diagnosis?",
+options:["Hidden bleeding or third-space loss","Hemolysis","Drug reaction","Pulmonary embolism only"],
+answer:0,
+explanation:"Normal hemoglobin early after bleeding can be misleading. Tachycardia, hypotension, and oliguria suggest concealed blood loss or third-spacing."},
+
+{q:"A post-operative patient is restless, tachypneic, hypotensive, and has cool clammy skin. What shock state is most likely?",
+options:["Septic shock (early phase)","Hypovolemic shock","Neurogenic shock","Anaphylactic shock only"],
+answer:1,
+explanation:"Cool clammy skin, tachycardia, and hypotension are classic for hypovolemic shock due to vasoconstriction and low perfusion."},
+
+{q:"A patient has normal blood pressure but urine output is falling post-operatively. What is the best initial interpretation?",
+options:["Immediate renal failure","Early sign of hypovolemia or renal hypoperfusion","Normal finding always requires no action","Bladder rupture"],
+answer:1,
+explanation:"Urine output is often the earliest indicator of hypoperfusion. BP may remain normal initially due to compensatory mechanisms."},
+
+{q:"A post-operative patient develops metabolic acidosis, rising lactate, and hypotension. What is the primary underlying mechanism?",
+options:["Respiratory alkalosis","Anaerobic metabolism due to tissue hypoperfusion","Excess bicarbonate loss","Hyperventilation"],
+answer:1,
+explanation:"Shock states cause poor tissue oxygen delivery leading to anaerobic metabolism and lactate accumulation, resulting in metabolic acidosis."},
+
+{q:"A post-operative patient has BP 90/60, HR 125, cold clammy extremities, and urine output of 10 mL/hour. Another patient has BP 100/70, HR 110, warm peripheries, and urine output of 25 mL/hour. Who should be escalated first?",
+options:["Second patient","First patient","Both are stable","Wait and recheck after 2 hours"],
+answer:1,
+explanation:"Cold clammy extremities, severe oliguria, tachycardia, and hypotension indicate decompensated hypovolemic or septic shock. This patient requires immediate escalation."},
+
+{q:"A patient is talking normally but has increasing respiratory rate (28/min) and subtle confusion post-operatively. What does this suggest?",
+options:["Stable recovery","Early deterioration requiring urgent review","Anxiety only","No clinical significance"],
+answer:1,
+explanation:"Tachypnea and subtle confusion are early signs of deterioration and often precede hypotension. This is a red flag requiring urgent escalation."},
+
+{q:"Two patients post-op: one has fever 38.5°C with stable vitals; another has normal temperature but rising heart rate and decreasing urine output. Who is more concerning?",
+options:["First patient","Second patient","Both equal","Neither"],
+answer:1,
+explanation:"Tachycardia and falling urine output are early signs of systemic compromise. Fever alone with stable vitals is less urgent."},
+
+{q:"A patient with abdominal surgery develops sudden agitation, tachycardia, and mild hypotension. Oxygen saturation is normal. What is the most concerning cause?",
+options:["Pain only","Early sepsis or bleeding","Normal post-op state","Medication side effect only"],
+answer:1,
+explanation:"Agitation with tachycardia and hypotension is an early warning of shock (bleeding or sepsis) and requires immediate escalation."},
+
+{q:"A patient has urine output 30 mL/hour but rising lactate levels and increasing tachycardia. What is the best interpretation?",
+options:["Stable recovery","Compensated shock with impending deterioration","Normal stress response","Fluid overload"],
+answer:1,
+explanation:"Normal urine output can be falsely reassuring. Rising lactate and tachycardia indicate tissue hypoperfusion and evolving shock."},
+
+{q:"Which patient requires immediate escalation?",
+options:[
+"A: Mild fever and stable vitals post-op day 2",
+"B: Mild pain but stable vitals",
+"C: Tachycardia 130 with borderline BP and restlessness",
+"D: Slight wound redness without systemic signs"
+],
+answer:2,
+explanation:"Tachycardia >120 with borderline hypotension and restlessness is a classic early shock pattern requiring urgent escalation."},
+
+{q:"A post-operative patient is alert but has increasing oxygen requirement and respiratory rate of 30/min. What is the most appropriate action?",
+options:["Observe closely only","Reassure and continue routine care","Urgent escalation and evaluation for PE, sepsis, or ARDS","Give sedatives"],
+answer:2,
+explanation:"Rising oxygen requirement and tachypnea are early signs of respiratory or systemic failure and require immediate investigation."},
+
+{q:"A patient with abdominal surgery has normal vitals but complains of 'feeling very unwell' and is sweating excessively. What should you do?",
+options:["Reassure only","Ignore symptom","Perform urgent assessment and rule out occult shock","Discharge patient"],
+answer:2,
+explanation:"Subjective deterioration can precede objective collapse. Sweating and vague symptoms often precede shock or bleeding."},
+
+{q:"Two patients: one has fever 39°C with stable vitals; another has normal temperature but confusion and tachycardia. Who is more likely to deteriorate?",
+options:["First patient","Second patient","Both equal","Neither"],
+answer:1,
+explanation:"Confusion and tachycardia are signs of cerebral and systemic hypoperfusion. Fever alone is less predictive of acute deterioration."},
+
+{q:"A post-operative patient suddenly becomes mildly hypotensive but remains alert and communicative. What is the safest interpretation?",
+options:["Benign finding always","Early compensated shock until proven otherwise","No action needed","Anesthetic effect only"],
+answer:1,
+explanation:"Early hypotension may represent compensated shock. Alertness does not exclude serious pathology."},
+
+{q:"A post-operative patient develops sudden hypotension, tachycardia, cold clammy skin, and low urine output. The abdomen is soft and non-tender. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Acute hemorrhage","Bowel obstruction"],
+answer:2,
+explanation:"Cold clammy skin, hypotension, tachycardia, and oliguria with no localizing signs strongly suggest acute hemorrhage or hypovolemia rather than sepsis (warm peripheries) or PE (usually hypoxia dominant)."},
+
+{q:"A post-operative patient suddenly becomes breathless, hypoxic, tachycardic, and has pleuritic chest pain. Blood pressure is relatively stable. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Bleeding","Anastomotic leak"],
+answer:1,
+explanation:"Acute onset dyspnea, hypoxia, tachycardia, pleuritic chest pain with relatively stable BP is classic for pulmonary embolism."},
+
+{q:"A post-operative patient has fever, warm peripheries, bounding pulse, and hypotension. What is the most likely diagnosis?",
+options:["Hemorrhage","Septic shock","Pulmonary embolism","Cardiogenic shock"],
+answer:1,
+explanation:"Warm peripheries with hypotension and bounding pulse indicate distributive shock, most commonly septic shock."},
+
+{q:"A patient develops sudden drop in hemoglobin, tachycardia, hypotension, but no fever. Abdomen is mildly distended. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Bleeding","Urinary retention"],
+answer:2,
+explanation:"Sudden Hb drop with tachycardia and hypotension without fever strongly suggests internal bleeding."},
+
+{q:"A post-operative patient is febrile, confused, hypotensive, with warm extremities and rising lactate. What is the most likely diagnosis?",
+options:["Pulmonary embolism","Sepsis","Hemorrhage","Hypoglycemia"],
+answer:1,
+explanation:"Fever, warm extremities, confusion, and raised lactate suggest septic shock due to distributive vasodilation."},
+
+{q:"A patient becomes acutely hypoxic and tachycardic after being immobile for 3 days post-op. Blood pressure is borderline low. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Bleeding","Ileus"],
+answer:1,
+explanation:"Post-operative immobility is a strong risk factor for PE. Acute hypoxia and tachycardia are key features."},
+
+{q:"Which feature is MOST suggestive of bleeding rather than sepsis?",
+options:["Fever","Warm extremities","Rising lactate","Cold clammy skin with falling hemoglobin"],
+answer:3,
+explanation:"Cold clammy skin with falling hemoglobin strongly indicates hemorrhage. Sepsis usually presents with fever and warm peripheries early."},
+
+{q:"A patient has hypotension, tachycardia, fever, and purulent wound discharge. What is the most likely diagnosis?",
+options:["Pulmonary embolism","Sepsis","Bleeding","Myocardial infarction"],
+answer:1,
+explanation:"Fever and purulent discharge point strongly toward sepsis from surgical site infection."},
+
+{q:"A post-operative patient has sudden collapse with hypoxia, clear chest on auscultation, and normal temperature. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Bleeding","Pneumonia"],
+answer:1,
+explanation:"Sudden collapse with hypoxia, clear chest, and no fever strongly suggests massive pulmonary embolism."},
+
+{q:"A patient shows tachycardia, hypotension, low urine output, and normal temperature, but hemoglobin is falling. What is the most likely diagnosis?",
+options:["Sepsis","Pulmonary embolism","Bleeding","ARDS"],
+answer:2,
+explanation:"Falling hemoglobin with shock features strongly points to bleeding rather than sepsis or PE."},
+
+{q:"What is the most common cause of postoperative fever within 24 hours?",
+options:["Wound infection","Atelectasis","Urinary tract infection","Sepsis"],
+answer:1,
+explanation:"Atelectasis is the most common cause of early post-operative fever (within 24 hours), not infection."},
+
+{q:"Which shock has warm peripheries early on?",
+options:["Hypovolemic shock","Cardiogenic shock","Septic shock","Obstructive shock"],
+answer:2,
+explanation:"Early septic shock is a distributive shock characterized by vasodilation, causing warm peripheries."},
+
+{q:"Most sensitive early marker of hypoperfusion in post-op patient?",
+options:["Blood pressure","Heart rate","Urine output","Temperature"],
+answer:2,
+explanation:"Urine output is the earliest and most sensitive marker of renal perfusion and early shock."},
+
+{q:"Most common complication after abdominal surgery overall?",
+options:["Bleeding","Wound infection","Anastomotic leak","PE"],
+answer:1,
+explanation:"Surgical site infection is the most common post-operative complication."},
+
+{q:"Best immediate action for suspected tension pneumothorax?",
+options:["Chest X-ray","CT scan","Needle decompression","Observation"],
+answer:2,
+explanation:"Tension pneumothorax is a clinical diagnosis and requires immediate needle decompression; imaging should not delay treatment."},
+
+{q:"Most common cause of small bowel obstruction post-op?",
+options:["Hernia","Tumor","Adhesions","Volvulus"],
+answer:2,
+explanation:"Post-operative adhesions are the most common cause of small bowel obstruction."},
+
+{q:"Normal urine output in adults?",
+options:["0.3 mL/kg/hr","0.5 mL/kg/hr","1 mL/kg/hr","2 mL/kg/hr"],
+answer:1,
+explanation:"Minimum acceptable urine output is about 0.5 mL/kg/hr in adults."},
+
+{q:"First electrolyte to check in vomiting patient?",
+options:["Calcium","Potassium","Magnesium","Phosphate"],
+answer:1,
+explanation:"Vomiting commonly causes hypokalemia due to loss of gastric secretions and secondary renal losses."},
+
+{q:"Classic triad of Cushing response?",
+options:["Hypotension, bradycardia, fever","Hypertension, bradycardia, irregular respiration","Hypotension, tachycardia, fever","Tachycardia, hypotension, tachypnea"],
+answer:1,
+explanation:"Cushing’s triad is hypertension, bradycardia, and irregular respiration, indicating raised intracranial pressure."},
+
+{q:"Most important principle in surgical safety?",
+options:["Speed","Precision","Never operate on uncertain anatomy","Bleeding control only"],
+answer:2,
+explanation:"Core surgical principle: never operate when anatomy is not clearly identified."}
+
+];
+
+
+function generateCertificateID(){
+const now = new Date();
+const year = now.getFullYear();
+const random = Math.floor(100000 + Math.random() * 900000);
+return `DIH-SURGERY-${year}-${random}`;
+}
+
+function generateQuestions(){
+let container=document.getElementById('quizForm');
+questions.forEach((item,index)=>{
+let div=document.createElement('div');
+div.classList.add('question');
+div.innerHTML=`<p>${index+1}. ${item.q}</p>`;
+item.options.forEach((opt,i)=>{
+div.innerHTML+=`<label><input type='radio' name='q${index}' value='${i}'> ${opt}</label><br>`;
+});
+container.appendChild(div);
+});
+}
+
+let finalScore=0;
+let candidateAnswers = [];
+function submitExam(){
+let score=0;
+questions.forEach((item,index)=>{
+let selected=document.querySelector(`input[name='q${index}']:checked`);
+
+if(selected){
+    let selectedValue = parseInt(selected.value);
+    candidateAnswers[index] = selectedValue;
+
+    if(selectedValue === item.answer){score++;}
+}else{
+    candidateAnswers[index] = null;
+}
+});
+finalScore=score;
+let percent=(finalScore/questions.length)*100;
+let level="";
+if(percent>=85){
+level="EXCELLENT – Exceptional Understanding and Engagement";
+}
+else if(percent>=70){
+level="VERY GOOD – Strong Clinical Understanding";
+}
+else if(percent>=60){
+level="GOOD – Adequate Understanding with Continued Learning Needed";
+}
+else{
+level="NOT SATISFACTORY – Basic Exposure Achieved";
+}
+document.getElementById('downloadBtn').classList.remove('hidden');
+document.getElementById('result').innerHTML=`Final Score: ${score}/100 (${percent.toFixed(1)}%)<br>Performance Level: ${level}`;
+document.getElementById('reportBtn').classList.remove('hidden');
+// Lock exam permanently for this user
+markExamCompleted(validUser);
+
+// Disable all inputs after submission
+document.querySelectorAll("input").forEach(el => el.disabled = true);
+// Disable only exam radio inputs
+document.querySelectorAll("input[type='radio']").forEach(el => el.disabled = true);
+
+// Disable submit button only
+document.querySelector("button[onclick='submitExam()']").disabled = true;
+certificateID = generateCertificateID();
+}
+
+async function generatePDF(){
+const { jsPDF } = window.jspdf;
+const doc=new jsPDF();
+let name=document.getElementById('candidateName').value;
+let percent=(finalScore/100)*100;
+let level="";
+if(percent>=85){
+level="EXCELLENT – Exceptional Understanding and Engagement";
+}
+else if(percent>=70){
+level="VERY GOOD – Strong Clinical Understanding";
+}
+else if(percent>=60){
+level="GOOD – Adequate Understanding with Continued Learning Needed";
+}
+else{
+level="NOT SATISFACTORY – Basic Exposure Achieved";
+}
+
+
+
+// Elegant Certificate Layout
+
+doc.setLineWidth(1.5);
+doc.rect(10,10,190,277);
+doc.setFontSize(22);
+doc.text("DUCHESS INTERNATIONAL HOSPITAL",105,40,null,null,"center");
+doc.setFontSize(16);
+doc.text("DEPARTMENT OF SURGERY",105,50,null,null,"center");
+doc.setFontSize(14);
+doc.text("CERTIFICATE OF BASIC SURGICAL COMPETENCE",105,65,null,null,"center");
+doc.setFontSize(12);
+doc.text(`This certifies that`,105,80,null,null,"center");
+doc.setFontSize(16);
+doc.text(name,105,95,null,null,"center");
+doc.setFontSize(12);
+doc.text("has successfully completed a Clinical knowledge evaluation at the Surgical Unit.",105,110,null,null,"center");
+doc.text(`Final Score: ${percent.toFixed(1)}%`,105,125,null,null,"center");
+doc.text(`Remarks: ${level}`,105,140,null,null,"center");
+doc.text("Assessed by: Dr. ____________________________",20,200);
+doc.text("Signature: ____________________________",20,215);
+doc.text("Date: ____________________________",20,230);
+doc.setFontSize(10);
+doc.text(`Certificate ID: ${certificateID}`,20,250);
+
+doc.save("Duchess_Observership_Certificate.pdf");
+}
+
+async function generateReportPDF(){
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+let y = 10;
+
+doc.setFontSize(14);
+doc.text("DUCHESS INTERNATIONAL HOSPITAL",10,y);
+y+=10;
+doc.setFontSize(12);
+doc.text(`Candidate: ${document.getElementById('candidateName').value}`,10,y);
+y+=8;
+doc.text(`Certificate ID: ${certificateID}`,10,y);
+y+=8;
+doc.text(`Final Score: ${finalScore}/100`,10,y);
+y+=12;
+
+questions.forEach((item,index)=>{
+if(y>270){doc.addPage(); y=10;}
+
+doc.setFontSize(11);
+doc.text(`${index+1}. ${item.q}`,10,y);
+y+=6;
+
+item.options.forEach((opt,i)=>{
+let prefix = "";
+if(i === item.answer){
+    prefix += "(Correct) ";
+}
+if(candidateAnswers[index] === i){
+    prefix += "(Selected) ";
+}
+doc.text(`- ${prefix}${opt}`,15,y);
+y+=5;
+});
+
+doc.setFontSize(10);
+doc.text(`Explanation: ${item.explanation}`,15,y);
+y+=8;
+});
+
+doc.save("Duchess_Full_Exam_Report.pdf");
+}
+
+
+// Anti-cheating: disable right-click
+window.addEventListener('contextmenu',function(e){e.preventDefault();});
+
+window.addEventListener("load", function(){
+    if(hasCompletedExam(validUser)){
+        document.getElementById("loginSection").innerHTML =
+        "<h2>Access Denied</h2><p>This candidate has already completed the competency examination. Re-attempts are not allowed.</p>";
+    }
+});
+</script>
+
+<div class="footer">© Duchess International Hospital | Surgical Excellence & Patient Safety</div>
+
+</body>
+</html>
